@@ -46,6 +46,13 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 .aux{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .aux button{padding:12px 6px;border-radius:12px;background:transparent;border:2px solid var(--line);font-size:15px;font-weight:700}
 .aux .x{border-color:var(--xr);color:var(--xr)}
+.obsbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;font-weight:700}
+.sin{margin-top:12px}
+.addc{width:100%;margin-top:10px;padding:14px;border-radius:14px;border:2px dashed var(--line);background:transparent;font-weight:800;font-size:17px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
+.ov[hidden]{display:none}
+.ovb{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ovb button{padding:24px 8px;border-radius:14px;font-size:21px;font-weight:900;background:var(--fin);color:var(--fint)}
 .foot{margin-top:12px}
 .exp{width:100%;min-height:68px;border-radius:16px;background:#f59e0b;color:#1a1000;font-size:21px;font-weight:900;box-shadow:0 4px 0 rgba(0,0,0,.3)}
 .exp:active{transform:translateY(3px);box-shadow:none}
@@ -66,12 +73,20 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
     <div><h1>Laboratorio Gornitz</h1><small>Turno mañana 06:00 a 11:00 · toma de datos de campo</small></div>
     <button class="theme" id="theme">🌓 Tema</button>
   </div>
-  <div class="slots"><div class="card" id="s0"></div><div class="card" id="s1"></div></div>
+  <div class="obsbar"><span>Observador: <b id="obsn">-</b></span><button class="theme" id="chgobs">Cambiar</button></div>
+  <div class="slots"><div class="card" id="s0"></div><div class="card" id="s1"></div><div class="card" id="s2" hidden></div></div>
+  <button class="addc" id="addc">➕ Agregar Paciente C</button>
   <div class="foot">
     <button class="exp" id="exp">📥 Exportar CSV</button>
     <div class="meta"><span id="cnt">Pacientes guardados: 0</span><button id="clr">⚠️ Borrar datos</button></div>
   </div>
+  <div class="card sin">
+    <div class="hd"><b>Arribo sin seguimiento</b><span id="nosc">0 registrados</span></div>
+    <div class="pri"><button id="nosN">+ Normal</button><button id="nosP">+ Prioritario</button></div>
+    <div class="aux"><button id="nosU">↩ Deshacer último</button><button id="nosE">📥 Exportar arribos</button></div>
+  </div>
 </div>
+<div class="ov" id="obsm" hidden><div class="box"><p><b>¿Quién sos?</b><br>Elegí tu nombre: se usa para identificar tus registros y armar IDs únicos al juntar los CSV.</p><div class="ovb" id="obsl"></div></div></div>
 <div id="toast"></div>
 <div id="modal" hidden>
   <div class="box">
@@ -81,7 +96,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 </div>
 
 <script>
-const KEY="lab_gornitz_v1",TKEY="lab_gornitz_tema_v1",L=["A","B"];
+const KEY="lab_gornitz_v2",TKEY="lab_gornitz_tema_v1",L=["A","B","C"],OBS=["Pedro","Meynet","Tomas","Lolo"];
 const STEPS=[
   {e:"🟢",l:"1. Llegada al Laboratorio",c:"g"},
   {e:"🔵",l:"2. Entra a Admisión",c:"b"},
@@ -90,7 +105,7 @@ const STEPS=[
   {e:"🔴",l:"5. Sale de Sala de Extracción / Fin",c:"r"},
   {e:"🏁",l:"6. Guardar y Liberar Slot",c:"f"}
 ];
-let S={slots:[null,null],pref:["Normal","Normal"],next:1,recs:[]};
+let S={obs:null,showC:false,slots:[null,null,null],pref:["Normal","Normal","Normal"],next:1,recs:[],nos:[]};
 try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&Array.isArray(x.slots))S=Object.assign(S,x)}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const $=s=>document.querySelector(s);
@@ -109,7 +124,8 @@ async function keepAwake(){try{if(navigator.wakeLock)await navigator.wakeLock.re
 const p2=n=>String(n).padStart(2,"0");
 function fmtT(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return(h?h+":"+p2(m):m)+":"+p2(x)}
 function stamp(ms){const d=new Date(ms);return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes())+":"+p2(d.getSeconds())+"."+String(d.getMilliseconds()).padStart(3,"0")}
-function release(id){if(id===S.next-1)S.next--}
+const pid=n=>S.obs[0].toUpperCase()+"-"+String(n).padStart(3,"0");
+function release(n){if(n===S.next-1)S.next--}
 
 function stageText(p,n){
   if(n===1)return"Esperando Admisión...";
@@ -143,6 +159,13 @@ function renderSlot(i){
 }
 function renderAll(){
   renderSlot(0);renderSlot(1);
+  $("#s2").hidden=!S.showC;if(S.showC)renderSlot(2);
+  const ab=$("#addc");
+  if(!S.showC){ab.hidden=false;ab.textContent="➕ Agregar Paciente C"}
+  else if(!S.slots[2]){ab.hidden=false;ab.textContent="➖ Quitar Paciente C"}
+  else ab.hidden=true;
+  $("#obsn").textContent=S.obs||"-";
+  $("#nosc").textContent=S.nos.length+" registrados";
   const pr=S.recs.filter(r=>r.tipo==="Prioritario").length;
   $("#cnt").textContent="Guardados: "+S.recs.length+" (Normal "+(S.recs.length-pr)+" · Prioritario "+pr+")";
 }
@@ -172,12 +195,12 @@ document.addEventListener("click",e=>{
   }else if(a==="next"){
     const n=p?p.ts.length:0;
     if(n===0){
-      S.slots[i]={id:S.next++,tipo:S.pref[i],ts:[Date.now()],puesto:null,sala:null,pick:null};S.pref[i]="Normal";
+      S.slots[i]={n:S.next,id:pid(S.next++),obs:S.obs,tipo:S.pref[i],ts:[Date.now()],puesto:null,sala:null,pick:null};S.pref[i]="Normal";
       buzz(40);toast("Paciente "+L[i]+" · ID "+S.slots[i].id+" · llegada")
     }else if(n===1){p.pick="puesto";buzz(25)}
     else if(n===3){p.pick="sala";buzz(25)}
     else if(n===5){
-      S.recs.push({id:p.id,tipo:p.tipo,ts:p.ts.slice(0,5),puesto:p.puesto,sala:p.sala});S.slots[i]=null;
+      S.recs.push({id:p.id,obs:p.obs,tipo:p.tipo,ts:p.ts.slice(0,5),puesto:p.puesto,sala:p.sala});S.slots[i]=null;
       buzz([40,40,40]);toast("Paciente "+p.id+" guardado")
     }else{p.ts.push(Date.now());buzz(40);toast("Paciente "+L[i]+" · "+STEPS[n].l.slice(3))}
   }else if(a==="pk"){
@@ -192,11 +215,11 @@ document.addEventListener("click",e=>{
       const popped=p.ts.length;p.ts.pop();
       if(popped===2)p.puesto=null;
       if(popped===4)p.sala=null;
-      if(!p.ts.length){release(p.id);S.slots[i]=null}
+      if(!p.ts.length){release(p.n);S.slots[i]=null}
       toast("Último paso deshecho")
     }
   }else if(a==="cancel"){
-    ask("¿Cancelar al Paciente "+L[i]+" (ID "+p.id+")? No se guardará ningún dato.",()=>{release(p.id);S.slots[i]=null;save();renderAll();toast("Paciente cancelado")});
+    ask("¿Cancelar al Paciente "+L[i]+" (ID "+p.id+")? No se guardará ningún dato.",()=>{release(p.n);S.slots[i]=null;save();renderAll();toast("Paciente cancelado")});
     return;
   }
   save();renderAll();
@@ -204,11 +227,14 @@ document.addEventListener("click",e=>{
 
 $("#exp").onclick=async()=>{
   if(!S.recs.length){toast("Todavía no hay pacientes guardados");return}
-  const head="ID_Paciente,Tipo_Paciente,Timestamp_Llegada,Timestamp_Inicio_Admision,Puesto_Admision,Timestamp_Fin_Admision,Timestamp_Inicio_Extraccion,Sala_Extraccion,Timestamp_Fin_Extraccion,Tiempo_Espera_Admision_Seg,Tiempo_Atencion_Admision_Seg,Tiempo_Espera_Extraccion_Seg,Tiempo_Atencion_Extraccion_Seg,Tiempo_Total_Permanencia_Seg";
+  const head="ID_Paciente,Observador,Tipo_Paciente,Timestamp_Llegada,Timestamp_Inicio_Admision,Puesto_Admision,Timestamp_Fin_Admision,Timestamp_Inicio_Extraccion,Sala_Extraccion,Timestamp_Fin_Extraccion,Tiempo_Espera_Admision_Seg,Tiempo_Atencion_Admision_Seg,Tiempo_Espera_Extraccion_Seg,Tiempo_Atencion_Extraccion_Seg,Tiempo_Total_Permanencia_Seg";
   const sec=(a,b)=>((b-a)/1000).toFixed(2);
-  const lines=S.recs.map(r=>{const t=r.ts;return[r.id,r.tipo,stamp(t[0]),stamp(t[1]),r.puesto,stamp(t[2]),stamp(t[3]),r.sala,stamp(t[4]),sec(t[0],t[1]),sec(t[1],t[2]),sec(t[2],t[3]),sec(t[3],t[4]),sec(t[0],t[4])].join(",")});
+  const lines=S.recs.map(r=>{const t=r.ts;return[r.id,r.obs||"",r.tipo,stamp(t[0]),stamp(t[1]),r.puesto,stamp(t[2]),stamp(t[3]),r.sala,stamp(t[4]),sec(t[0],t[1]),sec(t[1],t[2]),sec(t[2],t[3]),sec(t[3],t[4]),sec(t[0],t[4])].join(",")});
   const csv="\uFEFF"+head+"\r\n"+lines.join("\r\n")+"\r\n";
-  const d=new Date(),name="Laboratorio_Gornitz_"+d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+".csv";
+  await saveCsv(csv,fname("Laboratorio_Gornitz"));
+};
+const fname=b=>{const d=new Date();return b+"_"+d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+(S.obs?"_"+S.obs:"")+".csv"};
+async function saveCsv(csv,name){
   let dl=null;
   try{dl=window.claude?await window.claude.use("downloads"):null}catch(e){}
   if(dl){
@@ -227,9 +253,23 @@ $("#exp").onclick=async()=>{
     }
   }
 };
-$("#clr").onclick=()=>ask("¿Borrar los "+S.recs.length+" pacientes guardados? Los pacientes en curso no se tocan. Exportá el CSV antes si lo necesitás.",()=>{S.recs=[];save();renderAll();toast("Datos borrados")});
+$("#clr").onclick=()=>ask("¿Borrar los "+S.recs.length+" pacientes guardados y los "+S.nos.length+" arribos sin seguimiento? Los pacientes en curso no se tocan. Exportá los CSV antes si los necesitás.",()=>{S.recs=[];S.nos=[];save();renderAll();toast("Datos borrados")});
 
-renderAll();
+$("#addc").onclick=()=>{if(!S.showC)S.showC=true;else if(!S.slots[2])S.showC=false;save();renderAll()};
+const nosAdd=t=>{S.nos.push({obs:S.obs,ts:Date.now(),tipo:t});save();buzz(40);renderAll();toast("Arribo sin seguimiento · "+t)};
+$("#nosN").onclick=()=>nosAdd("Normal");
+$("#nosP").onclick=()=>nosAdd("Prioritario");
+$("#nosU").onclick=()=>{if(S.nos.length){S.nos.pop();save();renderAll();toast("Último arribo deshecho")}};
+$("#nosE").onclick=async()=>{
+  if(!S.nos.length){toast("Todavía no hay arribos sin seguimiento");return}
+  const csv="\uFEFFObservador,Timestamp_Arribo,Tipo_Paciente\r\n"+S.nos.map(r=>[r.obs||"",stamp(r.ts),r.tipo].join(",")).join("\r\n")+"\r\n";
+  await saveCsv(csv,fname("Arribos_Sin_Seguimiento"));
+};
+function showObs(){$("#obsm").hidden=false}
+OBS.forEach(n=>{const b=document.createElement("button");b.textContent=n;b.onclick=()=>{S.obs=n;save();$("#obsm").hidden=true;renderAll();toast("Observador: "+n)};$("#obsl").appendChild(b)});
+$("#chgobs").onclick=showObs;
+$("#obsm").onclick=e=>{if(e.target.id==="obsm"&&S.obs)$("#obsm").hidden=true};
+renderAll();if(!S.obs)showObs();
 </script>
 </body>
 </html>
