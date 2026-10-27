@@ -215,8 +215,16 @@ $("#exp").onclick=async()=>{
     try{await dl.save({filename:name,data:csv});toast("CSV listo: "+name)}
     catch(e){if(!e||e.code!=="declined")toast("No se pudo guardar el archivo")}
   }else{
-    try{await navigator.clipboard.writeText(csv);toast("Descarga no disponible: CSV copiado al portapapeles")}
-    catch(e){toast("Descarga no disponible en esta vista")}
+    try{
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+      a.download=name;document.body.appendChild(a);a.click();
+      setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+      toast("CSV descargado: "+name);
+    }catch(e){
+      try{await navigator.clipboard.writeText(csv);toast("No se pudo descargar: CSV copiado al portapapeles")}
+      catch(e2){toast("No se pudo exportar el archivo")}
+    }
   }
 };
 $("#clr").onclick=()=>ask("¿Borrar los "+S.recs.length+" pacientes guardados? Los pacientes en curso no se tocan. Exportá el CSV antes si lo necesitás.",()=>{S.recs=[];save();renderAll();toast("Datos borrados")});
