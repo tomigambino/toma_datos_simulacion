@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Laboratorio Gornitz · Campo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#eef1f5;--card:#ffffff;--line:#b9c2cf;--tx:#0b1220;--mut:#445064;--fin:#0b1220;--fint:#ffffff;--xr:#b91c1c;--g:#15803d;--b:#1d4ed8;--r:#b91c1c;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0f14;--card:#151b23;--line:#2f3b4d;--tx:#f4f7fa;--mut:#a9b5c3;--fin:#f4f7fa;--fint:#0b0f14;--xr:#fca5a5;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b0f14;--card:#151b23;--line:#2f3b4d;--tx:#f4f7fa;--mut:#a9b5c3;--fin:#f4f7fa;--fint:#0b0f14;--xr:#fca5a5;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+.wrap{max-width:920px;margin:0 auto;padding:10px 10px 28px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.top h1{font-size:19px;margin:0}
+.top small{color:var(--mut);display:block;font-size:13px}
+.theme{padding:10px 14px;border-radius:12px;background:var(--card);border:2px solid var(--line);font-size:16px;flex:none}
+.slots{display:grid;gap:10px}
+@media(min-width:760px){.slots{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px}
+.hd{display:flex;justify-content:space-between;align-items:center}
+.hd b{font-size:20px}.hd span{color:var(--mut);font-size:15px;font-weight:700}
+.pri{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.pri button{padding:12px 6px;border-radius:12px;background:transparent;border:2px solid var(--line);font-weight:800;font-size:16px}
+.pri button.on{background:var(--fin);color:var(--fint);border-color:var(--fin)}
+.dots{display:flex;gap:6px;margin:10px 0 8px}
+.dots i{flex:1;height:8px;border-radius:4px;background:var(--line)}
+.dots i.g.on{background:var(--g)}.dots i.b.on{background:var(--b)}.dots i.r.on{background:var(--r)}
+.st{font-weight:700;font-size:17px;min-height:24px}
+.tm{font-size:54px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1;margin:2px 0}
+.tot{color:var(--mut);font-size:14px;min-height:20px;font-variant-numeric:tabular-nums}
+.nxt{width:100%;min-height:84px;margin-top:8px;border-radius:16px;font-size:21px;font-weight:900;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.35);padding:8px}
+.nxt.g{background:var(--g)}.nxt.b{background:var(--b)}.nxt.r{background:var(--r)}.nxt.f{background:var(--fin);color:var(--fint)}
+.nxt:active{transform:translateY(3px);box-shadow:none;filter:brightness(1.25)}
+.pk{display:grid;gap:8px;margin-top:8px}
+.pk.c3{grid-template-columns:repeat(3,1fr)}.pk.c2{grid-template-columns:1fr 1fr}
+.pk button{min-height:70px;border-radius:14px;color:#fff;font-size:20px;font-weight:900}
+.pk .b{background:var(--b)}.pk .r{background:var(--r)}
+.pk button:active{filter:brightness(1.3)}
+.back{width:100%;margin-top:8px;padding:12px;border-radius:12px;background:transparent;border:2px solid var(--line);font-weight:700}
+.aux{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.aux button{padding:12px 6px;border-radius:12px;background:transparent;border:2px solid var(--line);font-size:15px;font-weight:700}
+.aux .x{border-color:var(--xr);color:var(--xr)}
+.foot{margin-top:12px}
+.exp{width:100%;min-height:68px;border-radius:16px;background:#f59e0b;color:#1a1000;font-size:21px;font-weight:900;box-shadow:0 4px 0 rgba(0,0,0,.3)}
+.exp:active{transform:translateY(3px);box-shadow:none}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;color:var(--mut);font-size:15px}
+.meta button{padding:10px 12px;border-radius:10px;border:2px solid var(--line);background:transparent;font-weight:700;font-size:14px;flex:none}
+#toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);background:var(--fin);color:var(--fint);padding:12px 18px;border-radius:999px;font-weight:700;font-size:16px;opacity:0;transition:.2s;pointer-events:none;max-width:90vw;text-align:center;z-index:5}
+#toast.s{opacity:1;transform:translate(-50%,0)}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;z-index:9}
+#modal[hidden]{display:none}
+.box{background:var(--card);color:var(--tx);border:2px solid var(--line);border-radius:18px;padding:20px;max-width:420px;width:100%}
+.box p{margin:0 0 16px}
+.box .aux{margin-top:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>Laboratorio Gornitz</h1><small>Turno mañana 06:00 a 11:00 · toma de datos de campo</small></div>
+    <button class="theme" id="theme">🌓 Tema</button>
+  </div>
+  <div class="slots"><div class="card" id="s0"></div><div class="card" id="s1"></div></div>
+  <div class="foot">
+    <button class="exp" id="exp">📥 Exportar CSV</button>
+    <div class="meta"><span id="cnt">Pacientes guardados: 0</span><button id="clr">⚠️ Borrar datos</button></div>
+  </div>
+</div>
+<div id="toast"></div>
+<div id="modal" hidden>
+  <div class="box">
+    <p id="mq"></p>
+    <div class="aux"><button id="no">Volver</button><button id="yes" class="x">Confirmar</button></div>
+  </div>
+</div>
+
+<script>
+const KEY="lab_gornitz_v1",TKEY="lab_gornitz_tema_v1",L=["A","B"];
+const STEPS=[
+  {e:"🟢",l:"1. Llegada al Laboratorio",c:"g"},
+  {e:"🔵",l:"2. Entra a Admisión",c:"b"},
+  {e:"🔵",l:"3. Sale de Admisión",c:"b"},
+  {e:"🔴",l:"4. Entra a Sala de Extracción",c:"r"},
+  {e:"🔴",l:"5. Sale de Sala de Extracción / Fin",c:"r"},
+  {e:"🏁",l:"6. Guardar y Liberar Slot",c:"f"}
+];
+let S={slots:[null,null],pref:["Normal","Normal"],next:1,recs:[]};
+try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&Array.isArray(x.slots))S=Object.assign(S,x)}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=s=>document.querySelector(s);
+let tt,pending=null;
+
+try{const t=localStorage.getItem(TKEY);if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}
+$("#theme").onclick=()=>{
+  const r=document.documentElement,cur=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+  const nx=cur==="dark"?"light":"dark";r.setAttribute("data-theme",nx);
+  try{localStorage.setItem(TKEY,nx)}catch(e){}
+};
+
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("s");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("s"),1700)}
+function buzz(v){try{navigator.vibrate&&navigator.vibrate(v)}catch(e){}}
+async function keepAwake(){try{if(navigator.wakeLock)await navigator.wakeLock.request("screen")}catch(e){}}
+const p2=n=>String(n).padStart(2,"0");
+function fmtT(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return(h?h+":"+p2(m):m)+":"+p2(x)}
+function stamp(ms){const d=new Date(ms);return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes())+":"+p2(d.getSeconds())+"."+String(d.getMilliseconds()).padStart(3,"0")}
+function release(id){if(id===S.next-1)S.next--}
+
+function stageText(p,n){
+  if(n===1)return"Esperando Admisión...";
+  if(n===2)return"Atención en Admisión · Puesto "+p.puesto+"...";
+  if(n===3)return"En cola para Extracción...";
+  if(n===4)return"Extracción en Sala "+p.sala+"...";
+  return"Atención finalizada · Permanencia total";
+}
+
+function renderSlot(i){
+  const p=S.slots[i],n=p?p.ts.length:0,el=$("#s"+i);
+  const tipo=p?p.tipo:S.pref[i];
+  const pri=["Normal","Prioritario"].map(v=>'<button class="'+(tipo===v?"on":"")+'" data-a="tipo" data-i="'+i+'" data-v="'+v+'">'+v+'</button>').join("");
+  const dots=["g","b","b","r","r"].map((c,k)=>'<i class="'+c+(k<n?" on":"")+'"></i>').join("");
+  let st="Libre · listo para el próximo paciente",rec="";
+  if(p){
+    st=stageText(p,n);
+    if(n===5){const d=k=>fmtT(p.ts[k+1]-p.ts[k]);rec="Esp. adm. "+d(0)+" · Adm. "+d(1)+" · Esp. extr. "+d(2)+" · Extr. "+d(3)}
+  }
+  let act;
+  if(p&&p.pick==="puesto"&&n===1){
+    act='<div class="pk c3">'+[1,2,3,4,5].map(k=>'<button class="b" data-a="pk" data-i="'+i+'" data-v="'+k+'">Puesto '+k+'</button>').join("")+'</div><button class="back" data-a="back" data-i="'+i+'">Volver</button>';
+  }else if(p&&p.pick==="sala"&&n===3){
+    act='<div class="pk c2">'+[1,2,3,4].map(k=>'<button class="r" data-a="pk" data-i="'+i+'" data-v="'+k+'">Sala '+k+'</button>').join("")+'</div><button class="back" data-a="back" data-i="'+i+'">Volver</button>';
+  }else{
+    const s=STEPS[n];act='<button class="nxt '+s.c+'" data-a="next" data-i="'+i+'">'+s.e+" "+s.l+'</button>';
+  }
+  const aux=p?'<div class="aux"><button data-a="undo" data-i="'+i+'">↩ Deshacer paso</button><button class="x" data-a="cancel" data-i="'+i+'">❌ Cancelar Paciente</button></div>':"";
+  el.innerHTML='<div class="hd"><b>Paciente '+L[i]+'</b><span>'+(p?"ID "+p.id:"Libre")+'</span></div><div class="pri">'+pri+'</div><div class="dots">'+dots+'</div><div class="st">'+st+'</div><div class="tm" id="tm'+i+'">'+(p?"0:00":"--:--")+'</div><div class="tot" id="tot'+i+'">'+rec+'</div>'+act+aux;
+  tick();
+}
+function renderAll(){
+  renderSlot(0);renderSlot(1);
+  const pr=S.recs.filter(r=>r.tipo==="Prioritario").length;
+  $("#cnt").textContent="Guardados: "+S.recs.length+" (Normal "+(S.recs.length-pr)+" · Prioritario "+pr+")";
+}
+
+function tick(){
+  const now=Date.now();
+  S.slots.forEach((p,i)=>{
+    if(!p)return;
+    const n=p.ts.length,tm=$("#tm"+i),tot=$("#tot"+i);
+    if(!tm)return;
+    if(n<5){tm.textContent=fmtT(now-p.ts[n-1]);tot.textContent="Permanencia total: "+fmtT(now-p.ts[0])}
+    else tm.textContent=fmtT(p.ts[4]-p.ts[0]);
+  });
+}
+setInterval(tick,250);
+
+function ask(msg,fn){$("#mq").textContent=msg;pending=fn;$("#modal").hidden=false}
+$("#no").onclick=()=>{pending=null;$("#modal").hidden=true};
+$("#yes").onclick=()=>{const f=pending;pending=null;$("#modal").hidden=true;if(f)f()};
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;
+  const i=+b.dataset.i,a=b.dataset.a,v=b.dataset.v;let p=S.slots[i];
+  keepAwake();
+  if(a==="tipo"){
+    if(p)p.tipo=v;else S.pref[i]=v;buzz(20);
+  }else if(a==="next"){
+    const n=p?p.ts.length:0;
+    if(n===0){
+      S.slots[i]={id:S.next++,tipo:S.pref[i],ts:[Date.now()],puesto:null,sala:null,pick:null};S.pref[i]="Normal";
+      buzz(40);toast("Paciente "+L[i]+" · ID "+S.slots[i].id+" · llegada")
+    }else if(n===1){p.pick="puesto";buzz(25)}
+    else if(n===3){p.pick="sala";buzz(25)}
+    else if(n===5){
+      S.recs.push({id:p.id,tipo:p.tipo,ts:p.ts.slice(0,5),puesto:p.puesto,sala:p.sala});S.slots[i]=null;
+      buzz([40,40,40]);toast("Paciente "+p.id+" guardado")
+    }else{p.ts.push(Date.now());buzz(40);toast("Paciente "+L[i]+" · "+STEPS[n].l.slice(3))}
+  }else if(a==="pk"){
+    p.ts.push(Date.now());
+    if(p.pick==="puesto"){p.puesto=+v;toast("Paciente "+L[i]+" · entra a Puesto "+v)}
+    else{p.sala=+v;toast("Paciente "+L[i]+" · entra a Sala "+v)}
+    p.pick=null;buzz(40);
+  }else if(a==="back"){p.pick=null}
+  else if(a==="undo"){
+    if(p.pick){p.pick=null}
+    else{
+      const popped=p.ts.length;p.ts.pop();
+      if(popped===2)p.puesto=null;
+      if(popped===4)p.sala=null;
+      if(!p.ts.length){release(p.id);S.slots[i]=null}
+      toast("Último paso deshecho")
+    }
+  }else if(a==="cancel"){
+    ask("¿Cancelar al Paciente "+L[i]+" (ID "+p.id+")? No se guardará ningún dato.",()=>{release(p.id);S.slots[i]=null;save();renderAll();toast("Paciente cancelado")});
+    return;
+  }
+  save();renderAll();
+});
+
+$("#exp").onclick=async()=>{
+  if(!S.recs.length){toast("Todavía no hay pacientes guardados");return}
+  const head="ID_Paciente,Tipo_Paciente,Timestamp_Llegada,Timestamp_Inicio_Admision,Puesto_Admision,Timestamp_Fin_Admision,Timestamp_Inicio_Extraccion,Sala_Extraccion,Timestamp_Fin_Extraccion,Tiempo_Espera_Admision_Seg,Tiempo_Atencion_Admision_Seg,Tiempo_Espera_Extraccion_Seg,Tiempo_Atencion_Extraccion_Seg,Tiempo_Total_Permanencia_Seg";
+  const sec=(a,b)=>((b-a)/1000).toFixed(2);
+  const lines=S.recs.map(r=>{const t=r.ts;return[r.id,r.tipo,stamp(t[0]),stamp(t[1]),r.puesto,stamp(t[2]),stamp(t[3]),r.sala,stamp(t[4]),sec(t[0],t[1]),sec(t[1],t[2]),sec(t[2],t[3]),sec(t[3],t[4]),sec(t[0],t[4])].join(",")});
+  const csv="\uFEFF"+head+"\r\n"+lines.join("\r\n")+"\r\n";
+  const d=new Date(),name="Laboratorio_Gornitz_"+d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+".csv";
+  let dl=null;
+  try{dl=window.claude?await window.claude.use("downloads"):null}catch(e){}
+  if(dl){
+    try{await dl.save({filename:name,data:csv});toast("CSV listo: "+name)}
+    catch(e){if(!e||e.code!=="declined")toast("No se pudo guardar el archivo")}
+  }else{
+    try{await navigator.clipboard.writeText(csv);toast("Descarga no disponible: CSV copiado al portapapeles")}
+    catch(e){toast("Descarga no disponible en esta vista")}
+  }
+};
+$("#clr").onclick=()=>ask("¿Borrar los "+S.recs.length+" pacientes guardados? Los pacientes en curso no se tocan. Exportá el CSV antes si lo necesitás.",()=>{S.recs=[];save();renderAll();toast("Datos borrados")});
+
+renderAll();
+</script>
+</body>
+</html>
