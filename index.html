@@ -53,6 +53,14 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 .ov[hidden]{display:none}
 .ovb{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .ovb button{padding:24px 8px;border-radius:14px;font-size:21px;font-weight:900;background:var(--fin);color:var(--fint)}
+.obsbar{flex-wrap:wrap}
+.pk.c2 button,.pk.c3 button{min-width:0;padding:6px}
+.pk small{display:block;font-size:12px;font-weight:600;opacity:.9;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#xl input{width:100%;padding:12px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--tx);font:inherit;margin-bottom:8px;user-select:text;-webkit-user-select:text}
+.mot{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.mot button{padding:10px 4px;border-radius:12px;background:transparent;border:2px solid var(--line);font-weight:700;font-size:13px;line-height:1.15;min-width:0}
+.mot button.on{background:var(--fin);color:var(--fint);border-color:var(--fin)}
+.nota{width:100%;margin-top:8px;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--tx);font:inherit;font-size:16px;user-select:text;-webkit-user-select:text}
 .foot{margin-top:12px}
 .exp{width:100%;min-height:68px;border-radius:16px;background:#f59e0b;color:#1a1000;font-size:21px;font-weight:900;box-shadow:0 4px 0 rgba(0,0,0,.3)}
 .exp:active{transform:translateY(3px);box-shadow:none}
@@ -73,7 +81,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
     <div><h1>Laboratorio Gornitz</h1><small>Turno mañana 06:00 a 11:00 · toma de datos de campo</small></div>
     <button class="theme" id="theme">🌓 Tema</button>
   </div>
-  <div class="obsbar"><span>Observador: <b id="obsn">-</b></span><button class="theme" id="chgobs">Cambiar</button></div>
+  <div class="obsbar"><span>Observador: <b id="obsn">-</b></span><span style="display:flex;gap:8px"><button class="theme" id="chgobs">Cambiar</button><button class="theme" id="cfgx">👥 Extr.</button></span></div>
   <div class="slots"><div class="card" id="s0"></div><div class="card" id="s1"></div><div class="card" id="s2" hidden></div></div>
   <button class="addc" id="addc">➕ Agregar Paciente C</button>
   <div class="foot">
@@ -82,11 +90,12 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
   </div>
   <div class="card sin">
     <div class="hd"><b>Arribo sin seguimiento</b><span id="nosc">0 registrados</span></div>
-    <div class="pri"><button id="nosN">+ Normal</button><button id="nosP">+ Prioritario</button></div>
+    <div class="pri" style="grid-template-columns:1fr"><button id="nosN">+ Registrar arribo</button></div>
     <div class="aux"><button id="nosU">↩ Deshacer último</button><button id="nosE">📥 Exportar arribos</button></div>
   </div>
 </div>
 <div class="ov" id="obsm" hidden><div class="box"><p><b>¿Quién sos?</b><br>Elegí tu nombre: se usa para identificar tus registros y armar IDs únicos al juntar los CSV.</p><div class="ovb" id="obsl"></div></div></div>
+<div class="ov" id="extm" hidden><div class="box" style="max-height:90vh;overflow:auto"><p><b>Extraccionistas</b><br>Definí cuántos hay y una descripción corta de cada uno (ej: guardapolvo azul, pelo largo). Pónganse de acuerdo los cuatro para usar el mismo criterio y el mismo orden.</p><div class="aux" style="margin:0 0 12px"><button id="xm">− Quitar uno</button><button id="xp">+ Agregar uno</button></div><div id="xl"></div><div class="aux" style="margin-top:12px"><button id="xc">Cancelar</button><button id="xs" style="background:var(--fin);color:var(--fint)">Guardar</button></div></div></div>
 <div id="toast"></div>
 <div id="modal" hidden>
   <div class="box">
@@ -101,11 +110,11 @@ const STEPS=[
   {e:"🟢",l:"1. Llegada al Laboratorio",c:"g"},
   {e:"🔵",l:"2. Entra a Admisión",c:"b"},
   {e:"🔵",l:"3. Sale de Admisión",c:"b"},
-  {e:"🔴",l:"4. Entra a Sala de Extracción",c:"r"},
-  {e:"🔴",l:"5. Sale de Sala de Extracción / Fin",c:"r"},
+  {e:"🔴",l:"4. Entra a Extracción",c:"r"},
+  {e:"🔴",l:"5. Sale de Extracción / Fin",c:"r"},
   {e:"🏁",l:"6. Guardar y Liberar Slot",c:"f"}
 ];
-let S={obs:null,showC:false,slots:[null,null,null],pref:["Normal","Normal","Normal"],next:1,recs:[],nos:[]};
+let S={obs:null,ext:[{d:""},{d:""},{d:""},{d:""}],showC:false,slots:[null,null,null],pref:["Normal","Normal","Normal"],mpref:["","",""],npref:["","",""],next:1,recs:[],nos:[]};
 try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&Array.isArray(x.slots))S=Object.assign(S,x)}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const $=s=>document.querySelector(s);
@@ -126,12 +135,13 @@ function fmtT(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m
 function stamp(ms){const d=new Date(ms);return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes())+":"+p2(d.getSeconds())+"."+String(d.getMilliseconds()).padStart(3,"0")}
 const pid=n=>S.obs[0].toUpperCase()+"-"+String(n).padStart(3,"0");
 function release(n){if(n===S.next-1)S.next--}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 function stageText(p,n){
   if(n===1)return"Esperando Admisión...";
   if(n===2)return"Atención en Admisión · Puesto "+p.puesto+"...";
   if(n===3)return"En cola para Extracción...";
-  if(n===4)return"Extracción en Sala "+p.sala+"...";
+  if(n===4)return"Extracción con Extraccionista "+p.sala+(p.desc?" ("+esc(p.desc)+")":"")+"...";
   return"Atención finalizada · Permanencia total";
 }
 
@@ -139,6 +149,8 @@ function renderSlot(i){
   const p=S.slots[i],n=p?p.ts.length:0,el=$("#s"+i);
   const tipo=p?p.tipo:S.pref[i];
   const pri=["Normal","Prioritario"].map(v=>'<button class="'+(tipo===v?"on":"")+'" data-a="tipo" data-i="'+i+'" data-v="'+v+'">'+v+'</button>').join("");
+  const mo=p?p.motivo:S.mpref[i],nt=p?p.nota:S.npref[i];
+  const mot=["Análisis y estudios","Retiro de resultados","Entrega de muestras"].map(v=>'<button class="'+(mo===v?"on":"")+'" data-a="mot" data-i="'+i+'" data-v="'+v+'">'+v+'</button>').join("");
   const dots=["g","b","b","r","r"].map((c,k)=>'<i class="'+c+(k<n?" on":"")+'"></i>').join("");
   let st="Libre · listo para el próximo paciente",rec="";
   if(p){
@@ -149,12 +161,12 @@ function renderSlot(i){
   if(p&&p.pick==="puesto"&&n===1){
     act='<div class="pk c3">'+[1,2,3,4,5].map(k=>'<button class="b" data-a="pk" data-i="'+i+'" data-v="'+k+'">Puesto '+k+'</button>').join("")+'</div><button class="back" data-a="back" data-i="'+i+'">Volver</button>';
   }else if(p&&p.pick==="sala"&&n===3){
-    act='<div class="pk c2">'+[1,2,3,4].map(k=>'<button class="r" data-a="pk" data-i="'+i+'" data-v="'+k+'">Sala '+k+'</button>').join("")+'</div><button class="back" data-a="back" data-i="'+i+'">Volver</button>';
+    act='<div class="pk '+(S.ext.length>4?"c3":"c2")+'">'+S.ext.map((x,j)=>'<button class="r" data-a="pk" data-i="'+i+'" data-v="'+(j+1)+'">Extr. '+(j+1)+(x.d?'<small>'+esc(x.d)+'</small>':'')+'</button>').join("")+'</div><button class="back" data-a="back" data-i="'+i+'">Volver</button>';
   }else{
-    const s=STEPS[n];act='<button class="nxt '+s.c+'" data-a="next" data-i="'+i+'">'+s.e+" "+s.l+'</button>';
+    const s=STEPS[n];act='<button class="nxt '+s.c+'" data-a="next" data-i="'+i+'">'+s.e+" "+s.l+'</button>';if(n===3)act+='<button class="back" data-a="skip" data-i="'+i+'">🏁 Finalizar sin extracción</button>';
   }
   const aux=p?'<div class="aux"><button data-a="undo" data-i="'+i+'">↩ Deshacer paso</button><button class="x" data-a="cancel" data-i="'+i+'">❌ Cancelar Paciente</button></div>':"";
-  el.innerHTML='<div class="hd"><b>Paciente '+L[i]+'</b><span>'+(p?"ID "+p.id:"Libre")+'</span></div><div class="pri">'+pri+'</div><div class="dots">'+dots+'</div><div class="st">'+st+'</div><div class="tm" id="tm'+i+'">'+(p?"0:00":"--:--")+'</div><div class="tot" id="tot'+i+'">'+rec+'</div>'+act+aux;
+  el.innerHTML='<div class="hd"><b>Paciente '+L[i]+'</b><span>'+(p?"ID "+p.id:"Libre")+'</span></div><div class="mot">'+mot+'</div><input class="nota" data-nota="'+i+'" maxlength="80" placeholder="Descripción del paciente (opcional)" value="'+esc(nt||"")+'"><div class="dots">'+dots+'</div><div class="st">'+st+'</div><div class="tm" id="tm'+i+'">'+(p?"0:00":"--:--")+'</div><div class="tot" id="tot'+i+'">'+rec+'</div>'+act+aux;
   tick();
 }
 function renderAll(){
@@ -167,7 +179,7 @@ function renderAll(){
   $("#obsn").textContent=S.obs||"-";
   $("#nosc").textContent=S.nos.length+" registrados";
   const pr=S.recs.filter(r=>r.tipo==="Prioritario").length;
-  $("#cnt").textContent="Guardados: "+S.recs.length+" (Normal "+(S.recs.length-pr)+" · Prioritario "+pr+")";
+  $("#cnt").textContent="Guardados: "+S.recs.length+"";
 }
 
 function tick(){
@@ -192,21 +204,23 @@ document.addEventListener("click",e=>{
   keepAwake();
   if(a==="tipo"){
     if(p)p.tipo=v;else S.pref[i]=v;buzz(20);
+  }else if(a==="mot"){
+    if(p)p.motivo=(p.motivo===v?"":v);else S.mpref[i]=(S.mpref[i]===v?"":v);buzz(20);
   }else if(a==="next"){
     const n=p?p.ts.length:0;
     if(n===0){
-      S.slots[i]={n:S.next,id:pid(S.next++),obs:S.obs,tipo:S.pref[i],ts:[Date.now()],puesto:null,sala:null,pick:null};S.pref[i]="Normal";
+      S.slots[i]={n:S.next,id:pid(S.next++),obs:S.obs,tipo:S.pref[i],motivo:S.mpref[i],nota:S.npref[i],ts:[Date.now()],puesto:null,sala:null,pick:null};S.pref[i]="Normal";S.mpref[i]="";S.npref[i]="";
       buzz(40);toast("Paciente "+L[i]+" · ID "+S.slots[i].id+" · llegada")
     }else if(n===1){p.pick="puesto";buzz(25)}
     else if(n===3){p.pick="sala";buzz(25)}
     else if(n===5){
-      S.recs.push({id:p.id,obs:p.obs,tipo:p.tipo,ts:p.ts.slice(0,5),puesto:p.puesto,sala:p.sala});S.slots[i]=null;
+      S.recs.push({id:p.id,obs:p.obs,tipo:p.tipo,ts:p.ts.slice(0,5),puesto:p.puesto,sala:p.sala,desc:p.desc||"",motivo:p.motivo||"",nota:p.nota||""});S.slots[i]=null;
       buzz([40,40,40]);toast("Paciente "+p.id+" guardado")
     }else{p.ts.push(Date.now());buzz(40);toast("Paciente "+L[i]+" · "+STEPS[n].l.slice(3))}
   }else if(a==="pk"){
     p.ts.push(Date.now());
     if(p.pick==="puesto"){p.puesto=+v;toast("Paciente "+L[i]+" · entra a Puesto "+v)}
-    else{p.sala=+v;toast("Paciente "+L[i]+" · entra a Sala "+v)}
+    else{p.sala=+v;p.desc=((S.ext[+v-1]||{}).d)||"";toast("Paciente "+L[i]+" · entra con Extraccionista "+v)}
     p.pick=null;buzz(40);
   }else if(a==="back"){p.pick=null}
   else if(a==="undo"){
@@ -214,11 +228,15 @@ document.addEventListener("click",e=>{
     else{
       const popped=p.ts.length;p.ts.pop();
       if(popped===2)p.puesto=null;
-      if(popped===4)p.sala=null;
+      if(popped===4){p.sala=null;p.desc=""}
       if(!p.ts.length){release(p.n);S.slots[i]=null}
       toast("Último paso deshecho")
     }
-  }else if(a==="cancel"){
+  }else if(a==="skip"){
+    ask("¿Guardar al Paciente "+L[i]+" sin extracción? Queda registrado como salida al terminar admisión.",()=>{const q=S.slots[i];if(!q)return;S.recs.push({id:q.id,obs:q.obs,tipo:q.tipo,ts:q.ts.slice(0,3),puesto:q.puesto,sala:null,desc:"",motivo:q.motivo||"",nota:q.nota||""});S.slots[i]=null;buzz([40,40,40]);toast("Paciente "+q.id+" guardado sin extracción");save();renderAll()});
+    return;
+  }
+  else if(a==="cancel"){
     ask("¿Cancelar al Paciente "+L[i]+" (ID "+p.id+")? No se guardará ningún dato.",()=>{release(p.n);S.slots[i]=null;save();renderAll();toast("Paciente cancelado")});
     return;
   }
@@ -227,9 +245,11 @@ document.addEventListener("click",e=>{
 
 $("#exp").onclick=async()=>{
   if(!S.recs.length){toast("Todavía no hay pacientes guardados");return}
-  const head="ID_Paciente,Observador,Tipo_Paciente,Timestamp_Llegada,Timestamp_Inicio_Admision,Puesto_Admision,Timestamp_Fin_Admision,Timestamp_Inicio_Extraccion,Sala_Extraccion,Timestamp_Fin_Extraccion,Tiempo_Espera_Admision_Seg,Tiempo_Atencion_Admision_Seg,Tiempo_Espera_Extraccion_Seg,Tiempo_Atencion_Extraccion_Seg,Tiempo_Total_Permanencia_Seg";
-  const sec=(a,b)=>((b-a)/1000).toFixed(2);
-  const lines=S.recs.map(r=>{const t=r.ts;return[r.id,r.obs||"",r.tipo,stamp(t[0]),stamp(t[1]),r.puesto,stamp(t[2]),stamp(t[3]),r.sala,stamp(t[4]),sec(t[0],t[1]),sec(t[1],t[2]),sec(t[2],t[3]),sec(t[3],t[4]),sec(t[0],t[4])].join(",")});
+  const head="ID_Paciente,Observador,Timestamp_Llegada,Timestamp_Inicio_Admision,Puesto_Admision,Timestamp_Fin_Admision,Timestamp_Inicio_Extraccion,Sala_Extraccion,Timestamp_Fin_Extraccion,Tiempo_Espera_Admision_Seg,Tiempo_Atencion_Admision_Seg,Tiempo_Espera_Extraccion_Seg,Tiempo_Atencion_Extraccion_Seg,Tiempo_Total_Permanencia_Seg,Descripcion_Extraccionista,Motivo_Visita,Descripcion_Paciente";
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const sec=(a,b)=>(a==null||b==null)?"":((b-a)/1000).toFixed(2);
+  const st=x=>x==null?"":stamp(x);
+  const lines=S.recs.map(r=>{const t=r.ts;return[r.id,r.obs||"",stamp(t[0]),stamp(t[1]),r.puesto,stamp(t[2]),st(t[3]),r.sala,st(t[4]),sec(t[0],t[1]),sec(t[1],t[2]),sec(t[2],t[3]),sec(t[3],t[4]),sec(t[0],t[t.length-1]),q(r.desc||""),q(r.motivo||""),q(r.nota||"")].join(",")});
   const csv="\uFEFF"+head+"\r\n"+lines.join("\r\n")+"\r\n";
   await saveCsv(csv,fname("Laboratorio_Gornitz"));
 };
@@ -256,19 +276,27 @@ async function saveCsv(csv,name){
 $("#clr").onclick=()=>ask("¿Borrar los "+S.recs.length+" pacientes guardados y los "+S.nos.length+" arribos sin seguimiento? Los pacientes en curso no se tocan. Exportá los CSV antes si los necesitás.",()=>{S.recs=[];S.nos=[];save();renderAll();toast("Datos borrados")});
 
 $("#addc").onclick=()=>{if(!S.showC)S.showC=true;else if(!S.slots[2])S.showC=false;save();renderAll()};
-const nosAdd=t=>{S.nos.push({obs:S.obs,ts:Date.now(),tipo:t});save();buzz(40);renderAll();toast("Arribo sin seguimiento · "+t)};
-$("#nosN").onclick=()=>nosAdd("Normal");
-$("#nosP").onclick=()=>nosAdd("Prioritario");
+const nosAdd=t=>{S.nos.push({obs:S.obs,ts:Date.now(),tipo:t});save();buzz(40);renderAll();toast("Arribo sin seguimiento registrado")};
+$("#nosN").onclick=()=>nosAdd();
+
 $("#nosU").onclick=()=>{if(S.nos.length){S.nos.pop();save();renderAll();toast("Último arribo deshecho")}};
 $("#nosE").onclick=async()=>{
   if(!S.nos.length){toast("Todavía no hay arribos sin seguimiento");return}
-  const csv="\uFEFFObservador,Timestamp_Arribo,Tipo_Paciente\r\n"+S.nos.map(r=>[r.obs||"",stamp(r.ts),r.tipo].join(",")).join("\r\n")+"\r\n";
+  const csv="\uFEFFObservador,Timestamp_Arribo\r\n"+S.nos.map(r=>[r.obs||"",stamp(r.ts)].join(",")).join("\r\n")+"\r\n";
   await saveCsv(csv,fname("Arribos_Sin_Seguimiento"));
 };
 function showObs(){$("#obsm").hidden=false}
 OBS.forEach(n=>{const b=document.createElement("button");b.textContent=n;b.onclick=()=>{S.obs=n;save();$("#obsm").hidden=true;renderAll();toast("Observador: "+n)};$("#obsl").appendChild(b)});
 $("#chgobs").onclick=showObs;
 $("#obsm").onclick=e=>{if(e.target.id==="obsm"&&S.obs)$("#obsm").hidden=true};
+let ed=[];
+function drawExt(){const l=$("#xl");l.innerHTML="";ed.forEach((d,j)=>{const w=document.createElement("div");w.innerHTML='<div style="color:var(--mut);font-size:14px;margin-bottom:4px">Extraccionista '+(j+1)+'</div>';const inp=document.createElement("input");inp.value=d;inp.placeholder="Descripción corta";inp.maxLength=40;inp.oninput=()=>{ed[j]=inp.value};w.appendChild(inp);l.appendChild(w)})}
+$("#cfgx").onclick=()=>{ed=S.ext.map(x=>x.d);drawExt();$("#extm").hidden=false};
+$("#xp").onclick=()=>{if(ed.length<8){ed.push("");drawExt()}};
+$("#xm").onclick=()=>{if(ed.length>1){ed.pop();drawExt()}};
+$("#xc").onclick=()=>{$("#extm").hidden=true};
+$("#xs").onclick=()=>{S.ext=ed.map(d=>({d:d.trim()}));save();$("#extm").hidden=true;renderAll();toast("Extraccionistas guardados: "+S.ext.length)};
+document.addEventListener("input",e=>{const t=e.target,k=t.dataset&&t.dataset.nota;if(k===undefined)return;const i=+k,p=S.slots[i];if(p)p.nota=t.value;else S.npref[i]=t.value;save()});
 renderAll();if(!S.obs)showObs();
 </script>
 </body>
